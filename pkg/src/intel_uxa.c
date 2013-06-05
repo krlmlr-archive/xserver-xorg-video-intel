@@ -230,8 +230,13 @@ intel_uxa_pixmap_compute_size(PixmapPtr pixmap,
 	if (*tiling == I915_TILING_NONE) {
 		/* We only require a 64 byte alignment for scanouts, but
 		 * a 256 byte alignment for sharing with PRIME.
+		 *
+		 * XXX: 256 makes XShmGetImage terribly slow with resolutions
+		 * like 1680x1050, hence we revert back to 64. It shouldn't
+		 * break anything as screenclone is a poor man's PRIME and the
+		 * real PRIME isn't needed.
 		 */
-		*stride = ALIGN(pitch, 256);
+		*stride = ALIGN(pitch, 64);
 		/* Round the height up so that the GPU's access to a 2x2 aligned
 		 * subspan doesn't address an invalid page offset beyond the
 		 * end of the GTT.

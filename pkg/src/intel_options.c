@@ -33,6 +33,7 @@ const OptionInfoRec intel_options[] = {
 	{OPTION_DEBUG_WAIT, "DebugWait", OPTV_BOOLEAN, {0}, 0},
 	{OPTION_BUFFER_CACHE,	"BufferCache",	OPTV_BOOLEAN,   {0},    1},
 #endif
+	{OPTION_VIRTUALS,	"Virtuals",	OPTV_INTEGER,	{0},	0},
 	{-1,			NULL,		OPTV_NONE,	{0},	0}
 };
 

@@ -40,6 +40,7 @@ enum intel_options {
 	OPTION_DEBUG_WAIT,
 	OPTION_BUFFER_CACHE,
 #endif
+	OPTION_VIRTUALS,
 	NUM_OPTIONS,
 };
 

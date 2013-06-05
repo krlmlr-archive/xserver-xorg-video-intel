@@ -121,6 +121,8 @@ struct intel_output {
 	struct list link;
 };
 
+#include "virtual_display.c"
+
 static void
 intel_output_dpms(xf86OutputPtr output, int mode);
 
@@ -435,6 +437,9 @@ intel_mode_disable_unused_functions(ScrnInfoPtr scrn)
 
 	/* Force off for consistency between kernel and ddx */
 	for (i = 0; i < xf86_config->num_crtc; i++) {
+		if (is_virtual(mode, i))
+			continue;
+
 		xf86CrtcPtr crtc = xf86_config->crtc[i];
 		if (!crtc->enabled)
 			drmModeSetCrtc(mode->fd, crtc_id(crtc->driver_private),
@@ -1503,7 +1508,7 @@ intel_output_init(ScrnInfoPtr scrn, struct intel_mode *mode, int num)
 	if (is_panel(koutput->connector_type))
 		intel_output_backlight_init(output);
 
-	output->possible_crtcs = kencoder->possible_crtcs;
+	output->possible_crtcs = kencoder->possible_crtcs & ((1 << mode->mode_res->count_crtcs) - 1);
 	output->interlaceAllowed = TRUE;
 
 	intel_output->output = output;
@@ -1576,6 +1581,9 @@ intel_xf86crtc_resize(ScrnInfoPtr scrn, int width, int height)
 		if (!crtc->enabled)
 			continue;
 
+		if (is_virtual(mode, i))
+			continue;
+
 		if (!intel_crtc_apply(crtc))
 			goto fail;
 	}
@@ -1646,6 +1654,9 @@ intel_do_pageflip(intel_screen_private *intel,
 		if (!intel_crtc_on(config->crtc[i]))
 			continue;
 
+		if (is_virtual(mode, i))
+			continue;
+
 		mode->flip_info = flip_info;
 		mode->flip_count++;
 
@@ -1682,6 +1693,9 @@ intel_do_pageflip(intel_screen_private *intel,
 error_undo:
 	drmModeRmFB(mode->fd, new_fb_id);
 	for (i = 0; i < config->num_crtc; i++) {
+		if (is_virtual(mode, i))
+			continue;
+
 		if (config->crtc[i]->enabled)
 			intel_crtc_apply(config->crtc[i]);
 	}
@@ -1810,7 +1824,7 @@ Bool intel_mode_pre_init(ScrnInfoPtr scrn, int fd, int cpp)
 	struct drm_i915_getparam gp;
 	struct intel_mode *mode;
 	unsigned int i;
-	int has_flipping;
+	int has_flipping, num_virtual;
 
 	mode = calloc(1, sizeof *mode);
 	if (!mode)
@@ -1841,6 +1855,13 @@ Bool intel_mode_pre_init(ScrnInfoPtr scrn, int fd, int cpp)
 		intel_output_init(scrn, mode, i);
 
 	intel_compute_possible_clones(scrn, mode);
+
+	num_virtual = 1;
+	xf86GetOptValInteger(intel->Options, OPTION_VIRTUALS, &num_virtual);
+	for (i = 0; i < num_virtual; i++) {
+		virtual_crtc_init(scrn, mode);
+		virtual_output_init(scrn, mode, i);
+	}
 
 #ifdef INTEL_PIXMAP_SHARING
 	xf86ProviderSetup(scrn, NULL, "Intel");
@@ -1970,6 +1991,10 @@ Bool intel_crtc_on(xf86CrtcPtr crtc)
 	if (!crtc->enabled)
 		return FALSE;
 
+	/* Virtual CRTC? */
+	if (intel_crtc->mode_crtc == NULL)
+		return FALSE;
+
 	/* Kernel manages CRTC status based on output config */
 	ret = FALSE;
 	for (i = 0; i < xf86_config->num_output; i++) {
@@ -2085,6 +2110,10 @@ void intel_copy_fb(ScrnInfoPtr scrn)
 	fbcon_id = 0;
 	for (i = 0; i < xf86_config->num_crtc; i++) {
 		intel_crtc = xf86_config->crtc[i]->driver_private;
+
+		if (is_virtual(intel_crtc->mode, i))
+			continue;
+
 		if (intel_crtc->mode_crtc->buffer_id)
 			fbcon_id = intel_crtc->mode_crtc->buffer_id;
 	}
