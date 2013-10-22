@@ -23,6 +23,7 @@ update-upstream: clean FORCE
 	git checkout master
 	git merge upstream || true
 	sed -r -i '/^<<<<<<</d;/^>>>>>>>/d;s-^=======.*$$--' pkg/debian/changelog
+	nano pkg/debian/changelog
 	git add pkg/debian/changelog
 	git commit
 
