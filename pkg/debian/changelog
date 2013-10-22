@@ -1,8 +1,8 @@
-xserver-xorg-video-intel (2:2.21.6-0ubuntu4.1+virtual1) raring; urgency=low
+xserver-xorg-video-intel (2:2.21.6-0ubuntu4.3+virtual1) raring; urgency=low
 
   * Applied patch 2.20.14 from https://github.com/liskin/patches/tree/master/hacks
 
- -- Kirill Müller <mail@kirill-mueller.de>  Wed, 05 Jun 2013 21:08:38 +0200
+ -- Kirill Müller <mail@kirill-mueller.de>  Wed, 31 Dec 2099 23:59:59 +0200
 
 xserver-xorg-video-intel (2:2.21.6-0ubuntu4.3) raring-proposed; urgency=low
 
